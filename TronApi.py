@@ -1,0 +1,13 @@
+import aiohttp
+
+async def get_account_info(address):
+    ...
+
+async def get_trx_balance(address):
+    ...
+
+async def get_usdt_balance(address):
+    ...
+
+async def get_transactions(address):
+    ...
