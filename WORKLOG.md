@@ -13,7 +13,14 @@
 
 ### Что изучил
 - https://docs.aiohttp.org/en/stable/
+- https://core.telegram.org/bots
 
 ### Что не сработало
 - проверка существования аккаунта через create_time (не активированный аккаунт считается как не существующий)
 - не удалось сделать проверку только через TronGrid
+
+
+### Для проверки использовались 3 аккаунта
+- TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj (активированный аккаунт)
+- TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdy (не существующий аккаунт)
+- TYfjGNPrqPc4vGcR76uSgfAXVeSqRJGxV8 (не активированный аккаунт)
