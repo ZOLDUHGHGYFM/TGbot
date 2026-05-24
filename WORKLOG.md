@@ -24,3 +24,27 @@
 - TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj (активированный аккаунт)
 - TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdy (не существующий аккаунт)
 - TYfjGNPrqPc4vGcR76uSgfAXVeSqRJGxV8 (не активированный аккаунт)
+
+
+
+## 24.05.26
+
+### Шаги выполнения
+- нашёл в оффициальной документации tronscan вариации get запросов 
+- на основе полученной информмации написал функцию get_transactions для получения последних 5 платежей
+
+### Проблемы
+
+### Что изучил
+- https://github.com/tronscan/tronscan-frontend/blob/dev2019/document/api.md#4
+- https://docs.tronscan.org/en/api/account
+- https://docs.tronscan.org/en/api/transactions-and-transfers
+
+
+### Что не сработало
+- get напрямую к "tokenAbbr", забыл что сначлаа нужно использовать обращенеи к шапке раздела
+
+### Для проверки использовались 3 аккаунта
+- TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj (активированный аккаунт)
+- TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdy (не существующий аккаунт)
+- TYfjGNPrqPc4vGcR76uSgfAXVeSqRJGxV8 (не активированный аккаунт)
