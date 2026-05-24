@@ -5,7 +5,7 @@ from aiogram.types import Message
 from aiogram.filters import Command
 from dotenv import load_dotenv
 
-from TronApi import get_account_info, get_trx_balance, get_transactions
+from TronApi import get_account_info, get_trx_balance, get_usdt_balance, get_transactions
 
 load_dotenv(dotenv_path=".env")
 
@@ -17,10 +17,10 @@ router = Router()
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     await message.answer(
-        "Отправь мне TRON-адрес (начинается с T, 34 символа), и я покажу:\n"
-        "баланс TRX\n"
-        "баланс USDT (TRC-20)\n"
-        "последние 5 транзакций"
+        "Отправь TRON-адрес (начинается с T, 34 символа), и я покажу:\n"
+        "- баланс TRX\n"
+        "- баланс USDT (TRC-20)\n"
+        "- последние 5 транзакций"
     )
      
 
@@ -32,8 +32,10 @@ async def handle_address(message: Message):
         status = await get_account_info(address)
         
         if status == "activated":
-            trx_balance = await get_trx_balance(address) 
+            trx_balance = await get_trx_balance(address)
             await message.answer(f"Баланс TRX: {trx_balance}")
+            usdt_balance = await get_usdt_balance(address)  
+            await message.answer(f"Баланс USDT: {usdt_balance}")
             transactions = await get_transactions(address)
             await message.answer(f"Последние 5 транзакций для адреса {address}:\n{transactions}")
             

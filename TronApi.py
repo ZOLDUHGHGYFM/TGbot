@@ -12,10 +12,13 @@ async def get_account_info(address):
                 data = await response.json()
                 if data.get("data"):
                     return "activated"
+            else: 
+                return "Не удалсь подключить к TronGrid API"
 
 
     # TronScan
-    url_TronScan = f"https://apilist.tronscanapi.com/api/account?address={address}"    
+    url_TronScan = f"https://apilist.tronscanapi.com/api/account?address={address}" 
+       
     async with aiohttp.ClientSession() as session:
         async with session.get(url_TronScan) as response:
             if response.status == 200:
@@ -25,7 +28,9 @@ async def get_account_info(address):
                         return "not_activated"
                     else:
                         return "activated"
+            return "Не удалсь подключить к TronScan API"
     return "none-existent"
+    
         
 async def get_trx_balance(address):
     balance_url = f"https://apilist.tronscanapi.com/api/account?address={address}"
@@ -34,13 +39,27 @@ async def get_trx_balance(address):
         async with session.get(balance_url) as response:
             if response.status == 200:
                 data = await response.json()
-                trx_balance = data.get("balance", 0) / 1_000_000
-                return trx_balance
-            else:
-                print(f"Произошла ошибка: {response.status}")
-                return None
-            
-# async def get_usdt_balance(address):
+                for token in data.get("tokens", []):
+                    if token.get("tokenAbbr") == "trx":
+                        balance_raw = token.get("balance", "0")
+                        balance_decimal = token.get("tokenDecimal", 6)
+                        balance_formatted = format_amount(balance_raw, balance_decimal)
+                        return f"{balance_formatted:.6f}"
+                
+                
+async def get_usdt_balance(address):
+    balance_url = f"https://apilist.tronscanapi.com/api/account?address={address}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(balance_url) as response:
+            if response.status == 200:
+                data = await response.json()
+                for token in data.get("tokens", []):
+                    if token.get("tokenAbbr") == "USDT":
+                        balance_raw = token.get("balance", "0")
+                        balance_decimal = token.get("tokenDecimal", 6)
+                        balance_formatted = format_amount(balance_raw, balance_decimal)
+                        return f"{balance_formatted:.6f}"
 
 
 async def get_transactions(address):
