@@ -5,7 +5,6 @@ from datetime import datetime
 async def get_account_info(address):
     # TronGrid
     url_TronGrid = f"https://api.trongrid.io/v1/accounts/{address}"
-
     async with aiohttp.ClientSession() as session:
         async with session.get(url_TronGrid) as response:
             if response.status == 200:
@@ -18,7 +17,6 @@ async def get_account_info(address):
 
     # TronScan
     url_TronScan = f"https://apilist.tronscanapi.com/api/account?address={address}" 
-       
     async with aiohttp.ClientSession() as session:
         async with session.get(url_TronScan) as response:
             if response.status == 200:
@@ -34,7 +32,6 @@ async def get_account_info(address):
         
 async def get_trx_balance(address):
     balance_url = f"https://apilist.tronscanapi.com/api/account?address={address}"
-
     async with aiohttp.ClientSession() as session:
         async with session.get(balance_url) as response:
             if response.status == 200:
@@ -49,7 +46,6 @@ async def get_trx_balance(address):
                 
 async def get_usdt_balance(address):
     balance_url = f"https://apilist.tronscanapi.com/api/account?address={address}"
-
     async with aiohttp.ClientSession() as session:
         async with session.get(balance_url) as response:
             if response.status == 200:
