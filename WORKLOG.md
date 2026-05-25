@@ -49,3 +49,31 @@
 - TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj (активированный аккаунт)
 - TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdy (не существующий аккаунт)
 - TYfjGNPrqPc4vGcR76uSgfAXVeSqRJGxV8 (не активированный аккаунт)
+
+
+
+
+
+
+## 25.05.26
+
+### Шаги выполнения
+- Вывод 0.000000 если на аккаунте нет usdt/trx
+- Добавил обработку ошибок используя try except
+
+
+### Проблемы
+
+
+### Что изучил
+- https://www.w3schools.com/python/python_ref_exceptions.asp
+
+
+### Что не сработало
+- 
+
+### Для проверки использовались 4 аккаунта
+- TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj (активированный аккаунт)
+- TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdy (не существующий аккаунт)
+- TYfjGNPrqPc4vGcR76uSgfAXVeSqRJGxV8 (не активированный аккаунт)
+- TCHf57z2FtZveBrWkTKwxaATv7CJkVkXmB (trx > 0, usdt = 0)
