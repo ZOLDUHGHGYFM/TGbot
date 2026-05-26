@@ -54,7 +54,7 @@ async def get_trx_balance(address):
                                 balance_decimal = token.get("tokenDecimal", 6)
                                 balance_formatted = format_amount(balance_raw, balance_decimal)
                                 return f"{balance_formatted:.6f}"
-                        return "0.000000"
+                            return "0.000000"
                 else:
                     return "Ошибка подключения к TronScan API."
     except aiohttp.ClientError:
@@ -76,6 +76,8 @@ async def get_usdt_balance(address):
                                 balance_decimal = token.get("tokenDecimal", 6)
                                 balance_formatted = format_amount(balance_raw, balance_decimal)
                                 return f"{balance_formatted:.6f}"
+                            return "0.000000"
+                    else:
                         return "0.000000"
     except aiohttp.ClientError:
         return "Ошибка подключения к TronScan API."
