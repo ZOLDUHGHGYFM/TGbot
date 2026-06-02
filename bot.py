@@ -70,6 +70,9 @@ async def handle_address(message: Message):
     Обрабатывает отправленный адрес без команды: баланс и последние 5 транзакций.
     """
     
+    if message.text is None:
+        await message.answer("Пожалуйста, отправьте текст с адресом.")
+        return
     address = message.text.strip()
     if address.startswith("T") and len(address) == 34:
         await message.answer("Адрес введён верно, ищу информацию")
@@ -97,7 +100,7 @@ async def start_bot():
     Создаёт бота и запускает long-polling.
     """
     
-    bot = Bot(token=TOKEN)
+    bot = Bot(token=TOKEN) # type: ignore
 
     dp = Dispatcher()
     dp.include_router(router)
