@@ -162,7 +162,7 @@ def generate_analysis_summary():
     pass
 
 
-async def analyze_address():
+async def analyze_address(address):
     # Получить последние транзакции
     # Проанализировать типы транзакций (входящие, исходящие, контракты)
     # Определить активность (трейдинг, стейкинг, взаимодействия с DeFi)
