@@ -152,7 +152,7 @@ async def get_address_info(address: str):
 
     Возвращает:
     - 'contract' : если TronScan видит контрактные поля
-    - 'exchange' : если по тегу похоже на биржу (эвристика)
+    - 'exchange' : если по тегу похоже на биржу
     - 'user'     : обычный пользовательский адрес
     - строку с ошибкой: если TronScan недоступен/ответ некорректный
     """
@@ -352,10 +352,10 @@ def generate_summary(stats: dict, activity_types: list, address_type: str) -> st
         return f"Анализ адреса: {address_type or 'неизвестного типа'}\nТранзакции отсутствуют или не удалось загрузить."
 
     lines = [
-        f"Анализ адреса: {address_type if address_type else 'не определён'}",
+        f"Тип адреса : {address_type if address_type else 'не определён'}",
         f"Всего транзакций (успешных): {stats['total']}",
-        f"Входящих: {stats['incoming']}  |  Сумма (TRX+USDT): {stats['in_sum']:.2f}",
-        f"Исходящих: {stats['outgoing']}  |  Сумма (TRX+USDT): {stats['out_sum']:.2f}",
+        f"Входящих: {stats['incoming']}  |  Сумма (TRX+USDT): {stats['in_sum']:.6f}",
+        f"Исходящих: {stats['outgoing']}  |  Сумма (TRX+USDT): {stats['out_sum']:.6f}",
         f"Уникальных контрагентов: {stats['unique_counterparties']}",
         f"Мелких переводов (<10 ед.): {stats['small_tx_count']}",
         "",
