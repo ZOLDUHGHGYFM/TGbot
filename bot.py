@@ -5,7 +5,13 @@ from aiogram.types import Message
 from aiogram.filters import Command
 from dotenv import load_dotenv
 
-from TronApi import get_account_info, get_trx_balance, get_usdt_balance, get_transactions
+from TronApi import (
+    get_account_info,
+    get_trx_balance,
+    get_usdt_balance,
+    get_transactions,
+    analyze_address
+)
 
 load_dotenv(dotenv_path=".env")
 
@@ -20,11 +26,33 @@ async def cmd_start(message: Message):
         "Отправь TRON-адрес (начинается с T, 34 символа), и я покажу:\n"
         "- баланс TRX\n"
         "- баланс USDT (TRC-20)\n"
-        "- последние 5 транзакций"
+        "- последние 5 транзакций\n\n"
+        "Команда /analyze ADDRESS — анализ последних транзакций и типа активности."
     )
-     
 
-@router.message(F.text)
+
+def _is_tron_address(text: str) -> bool:
+    address = text.strip()
+    return address.startswith("T") and len(address) == 34
+
+
+@router.message(Command("analyze"))
+async def cmd_analyze(message: Message):
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2 or not _is_tron_address(parts[1]):
+        await message.answer(
+            "Использование: /analyze ADDRESS\n"
+            "Пример: /analyze TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj"
+        )
+        return
+
+    address = parts[1].strip()
+    await message.answer("Анализирую адрес, подождите…")
+    summary = await analyze_address(address)
+    await message.answer(summary)
+
+
+@router.message(F.text & ~F.text.startswith("/"))
 async def handle_address(message: Message):
     address = message.text.strip()
     if address.startswith("T") and len(address) == 34:
