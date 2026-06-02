@@ -22,6 +22,10 @@ if not TOKEN:
 router = Router()
 @router.message(Command("start"))
 async def cmd_start(message: Message):
+    """
+    Показывает справку и примеры использования бота.
+    """
+    
     await message.answer(
         "Отправь TRON-адрес (начинается с T, 34 символа), и я покажу:\n"
         "- баланс TRX\n"
@@ -32,12 +36,20 @@ async def cmd_start(message: Message):
 
 
 def _is_tron_address(text: str) -> bool:
+    """
+    Минимальная валидация TRON-адреса.
+    """
+    
     address = text.strip()
     return address.startswith("T") and len(address) == 34
 
 
 @router.message(Command("analyze"))
 async def cmd_analyze(message: Message):
+    """
+    Обрабатывает `/analyze ADDRESS` и возвращает сводку активности адреса.
+    """
+    
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2 or not _is_tron_address(parts[1]):
         await message.answer(
@@ -54,6 +66,10 @@ async def cmd_analyze(message: Message):
 
 @router.message(F.text & ~F.text.startswith("/"))
 async def handle_address(message: Message):
+    """
+    Обрабатывает отправленный адрес без команды: баланс и последние 5 транзакций.
+    """
+    
     address = message.text.strip()
     if address.startswith("T") and len(address) == 34:
         await message.answer("Адрес введён верно, ищу информацию")
@@ -77,6 +93,10 @@ async def handle_address(message: Message):
         await message.answer("Отправлен не корректный TRON-адрес.")
 
 async def start_bot():
+    """
+    Создаёт бота и запускает long-polling.
+    """
+    
     bot = Bot(token=TOKEN)
 
     dp = Dispatcher()
