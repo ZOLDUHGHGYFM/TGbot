@@ -231,92 +231,190 @@ def _safe_float(value, default: float = 0.0) -> float:
         return default
 
 
-def _normalize_amount(amount_raw, token_decimal) -> float:
+def normalize_amount(amount_raw, token_decimal=None, token_abbr=None) -> float:
     """
-    Нормализует “сырой” amount из TronScan с учётом decimals.
-    TronScan часто отдаёт amount как строку целого числа (минимальные единицы).
+    Нормализует "сырой" amount с учётом decimals и возможного формата данных.
+    Поддерживает целые строки (минимальные единицы), числа, словари с ключами
+    вроде 'value'/'amount' и нечистые строки. Возвращает float в основных единицах.
     """
-    amount_int = _safe_int(amount_raw, default=0)
-    dec = _safe_int(token_decimal, default=6)
-    if dec < 0 or dec > 30:
-        dec = 6
-    return amount_int / (10 ** dec)
+    try:
+        # Unwrap common dict wrappers
+        if isinstance(amount_raw, dict):
+            for k in ("amount", "value", "balance", "quantity", "tokenAmount"):
+                if k in amount_raw:
+                    amount_raw = amount_raw.get(k)
+                    break
+
+        # None -> 0.0
+        if amount_raw is None:
+            return 0.0
+
+        # If already numeric
+        if isinstance(amount_raw, (float,)):
+            return float(amount_raw)
+        if isinstance(amount_raw, int):
+            dec = _safe_int(token_decimal, default=6)
+            return float(amount_raw) / (10 ** dec)
+
+        # Strings: try to parse int first, then float, fallback to extracting digits
+        if isinstance(amount_raw, str):
+            s = amount_raw.strip()
+            # plain digits
+            if s.isdigit():
+                amount_int = int(s)
+                dec = _safe_int(token_decimal, default=6)
+                return amount_int / (10 ** dec)
+            # decimal representation
+            try:
+                return float(s)
+            except Exception:
+                import re
+                digits = re.sub(r"[^0-9]", "", s)
+                if digits:
+                    amount_int = int(digits)
+                    dec = _safe_int(token_decimal, default=6)
+                    return amount_int / (10 ** dec)
+                return 0.0
+
+        # Fallback
+        return 0.0
+    except Exception:
+        return 0.0
 
 
 def analyze_transactions(txs: list, address: str) -> dict:
     """
-    Считает базовую статистику по транзакциям для эвристик в `/analyze`.
+    Анализирует транзакции адреса.
 
-    Формирует:
-    - входящие/исходящие счётчики и суммы
-    - число уникальных контрагентов
-    - число “мелких” входящих (amount < 10)
-    - минимальный интервал между транзакциями (по timestamp)
+    Исправления:
+    - отдельно считает TRX и USDT
+    - нормализует адреса
+    - не смешивает валюты
     """
 
-    addr = (address or "").strip()
+    addr = (address or "").strip().lower()
+
     incoming = 0
     outgoing = 0
-    in_sum = 0.0
-    out_sum = 0.0
+
+    in_sum = {
+        "TRX": 0.0,
+        "USDT": 0.0
+    }
+
+    out_sum = {
+        "TRX": 0.0,
+        "USDT": 0.0
+    }
+
     small_tx_count = 0
     counterparties = set()
     timestamps = []
 
     for tx in txs or []:
-        owner = (tx.get("ownerAddress") or "").strip()
-        to = (tx.get("toAddress") or "").strip()
+
+        owner = (
+            tx.get("ownerAddress")
+            or tx.get("from")
+            or tx.get("owner")
+            or ""
+        ).strip().lower()
+
+        to = (
+            tx.get("toAddress")
+            or tx.get("to")
+            or ""
+        ).strip().lower()
 
         token_info = tx.get("tokenInfo") or {}
-        token_abbr = (token_info.get("tokenAbbr") or "").upper()
-        token_decimal = token_info.get("tokenDecimal")
 
-        amount = _normalize_amount(tx.get("amount"), token_decimal)
+        token = (
+            token_info.get("tokenAbbr")
+            or token_info.get("symbol")
+            or "TRX"
+        ).upper()
 
-        ts = _safe_int(tx.get("timestamp"), default=0)
+        decimals = token_info.get("tokenDecimal")
+
+        if decimals is None:
+            decimals = token_info.get("decimals", 6)
+
+        if token not in ("TRX", "USDT"):
+            continue
+
+        amount_raw = tx.get("amount")
+
+        if amount_raw is None:
+            amount_raw = tx.get("value")
+
+        amount = normalize_amount(
+            amount_raw,
+            decimals,
+            token
+        )
+
+        ts = _safe_int(tx.get("timestamp"))
+
         if ts:
             timestamps.append(ts)
 
-        if to and to == addr:
+        if to == addr:
+
             incoming += 1
-            in_sum += amount
+            in_sum[token] += amount
+
             if owner:
                 counterparties.add(owner)
-            if amount > 0 and amount < 10:
+
+            if 0 < amount < 10:
                 small_tx_count += 1
-        elif owner and owner == addr:
+
+        elif owner == addr:
+
             outgoing += 1
-            out_sum += amount
+            out_sum[token] += amount
+
             if to:
                 counterparties.add(to)
-        else:
-            continue
-
-        # Небольшая поправка: если токен неизвестен, всё равно учитываем amount.
-        # Для сводки нам важнее поведение, чем точный токен.
 
     total = incoming + outgoing
 
-    min_interval_sec = 10**9
+    min_interval_sec = 0
+
     if len(timestamps) >= 2:
-        timestamps.sort(reverse=True)
-        for i in range(len(timestamps) - 1):
-            delta_ms = timestamps[i] - timestamps[i + 1]
-            if delta_ms > 0:
-                min_interval_sec = min(min_interval_sec, delta_ms / 1000.0)
-    if min_interval_sec == 10**9:
-        min_interval_sec = 0
+
+        timestamps.sort()
+
+        intervals = []
+
+        for i in range(1, len(timestamps)):
+            delta = (
+                timestamps[i]
+                - timestamps[i - 1]
+            ) / 1000
+
+            if delta > 0:
+                intervals.append(delta)
+
+        if intervals:
+            min_interval_sec = min(intervals)
 
     return {
         "total": total,
+
         "incoming": incoming,
         "outgoing": outgoing,
-        "in_sum": float(in_sum),
-        "out_sum": float(out_sum),
+
+        "in_sum": in_sum,
+        "out_sum": out_sum,
+
         "unique_counterparties": len(counterparties),
+
         "small_tx_count": small_tx_count,
-        "min_interval_sec": _safe_float(min_interval_sec, default=0.0),
+
+        "min_interval_sec": min_interval_sec
     }
+
 
 
 def determine_activity_type(stats: dict) -> list:
@@ -343,29 +441,65 @@ def determine_activity_type(stats: dict) -> list:
     return types
     
     
-def generate_summary(stats: dict, activity_types: list, address_type: str) -> str:
-    """
-    Формирует финальный человекочитаемый текст ответа для `/analyze`.
-    """
-    
+def generate_summary(
+    stats: dict,
+    activity_types: list,
+    address_type: str
+):
+
     if stats["total"] == 0:
-        return f"Анализ адреса: {address_type or 'неизвестного типа'}\nТранзакции отсутствуют или не удалось загрузить."
+        return (
+            f"Анализ адреса: {address_type}\n"
+            f"Транзакции отсутствуют."
+        )
 
     lines = [
-        f"Тип адреса : {address_type if address_type else 'не определён'}",
+
+        f"Тип адреса : {address_type}",
+
         f"Всего транзакций (успешных): {stats['total']}",
-        f"Входящих: {stats['incoming']}  |  Сумма (TRX+USDT): {stats['in_sum']:.6f}",
-        f"Исходящих: {stats['outgoing']}  |  Сумма (TRX+USDT): {stats['out_sum']:.6f}",
-        f"Уникальных контрагентов: {stats['unique_counterparties']}",
-        f"Мелких переводов (<10 ед.): {stats['small_tx_count']}",
+
         "",
-        "Определённые типы активности:",
+
+        (
+            f"Входящих: {stats['incoming']}\n"
+            f"TRX: {stats['in_sum']['TRX']:.6f}\n"
+            f"USDT: {stats['in_sum']['USDT']:.6f}"
+        ),
+
+        "",
+
+        (
+            f"Исходящих: {stats['outgoing']}\n"
+            f"TRX: {stats['out_sum']['TRX']:.6f}\n"
+            f"USDT: {stats['out_sum']['USDT']:.6f}"
+        ),
+
+        "",
+
+        (
+            f"Уникальных контрагентов: "
+            f"{stats['unique_counterparties']}"
+        ),
+
+        (
+            f"Мелких переводов (<10): "
+            f"{stats['small_tx_count']}"
+        ),
+
+        "",
+
+        "Определённые типы активности:"
     ]
+
     if activity_types:
         for t in activity_types:
             lines.append(f"  - {t}")
     else:
-        lines.append("  - Обычный пользовательский кошелёк")
+        lines.append(
+            "  - Обычная активность"
+        )
+
     return "\n".join(lines)
 
 
