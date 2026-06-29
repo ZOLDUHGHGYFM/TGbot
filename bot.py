@@ -70,7 +70,7 @@ async def handle_address(message: Message):
     Обрабатывает отправленный адрес без команды: баланс и последние 5 транзакций.
     """
     
-    address = message.text.strip()
+    address = message.text.strip() # type: ignore
     if address.startswith("T") and len(address) == 34:
         await message.answer("Адрес введён верно, ищу информацию")
         status = await get_account_info(address)
